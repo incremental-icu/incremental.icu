@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { authFetch } from "@/lib/api";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import dayjs from "dayjs";
 import { useRouter } from "next/navigation";
 import { useLayout } from "@/hooks/use-layout";
@@ -18,6 +20,7 @@ import {
   IconSourceCode,
   IconTargetArrow,
   IconHistory,
+  IconInfoCircle,
 } from "@tabler/icons-react";
 import { TaskDialog } from "@/components/dash/task-dialog";
 
@@ -44,6 +47,7 @@ interface TaskItem {
 }
 
 export default function TasksPage() {
+  const t = useTranslations('DashPage');
   const { layout } = useLayout();
   const router = useRouter();
   const [tasks, setTasks] = useState<TaskItem[]>([]);
@@ -68,7 +72,7 @@ export default function TasksPage() {
       }
     } catch (err) {
       console.error("Fetch tasks error:", err);
-      toast.error("获取任务列表失败");
+      toast.error(t('fetchTasksError'));
     } finally {
       setLoading(false);
     }
@@ -99,7 +103,7 @@ export default function TasksPage() {
       "flex flex-row gap-6 p-6 mx-auto bg-slate-50/50 dark:bg-background flex-1 text-sm transition-all duration-300",
       layout === "fixed" ? "w-full max-w-7xl" : "w-full max-w-none"
     )}>
-      {/* 左侧自定义导航菜单 */}
+      {/* Left side navigation menu */}
       <aside className="hidden lg:block w-40 shrink-0">
         <div className="sticky top-10">
           <nav className="flex flex-col gap-4 text-muted-foreground/80">
@@ -129,7 +133,7 @@ export default function TasksPage() {
         <div className="flex flex-col gap-8 py-4 md:gap-6 md:py-6">
           <div>
             <div className="flex items-center justify-between mb-2">
-              <h1 className="text-xl font-semibold">定时任务管理</h1>
+              <h1 className="text-xl font-semibold">{t('taskTitle')}</h1>
               <Button
                 onClick={() => {
                   setCurrentTask(null);
@@ -137,22 +141,22 @@ export default function TasksPage() {
                 }}
               >
                 <IconPlus className="h-4 w-4 mr-2" />
-                新建任务
+                {t('createTask')}
               </Button>
             </div>
             <p className="text-muted-foreground text-sm">
-              配置数据同步任务，自动定时同步你的运动数据。
+              {t('taskDescription')}
             </p>
           </div>
 
           <section>
             {loading ? (
               <div className="text-center py-12 text-muted-foreground">
-                加载中...
+                {t('loading')}
               </div>
             ) : tasks.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
-                暂无定时任务，点击"新建任务"开始配置
+                {t('noTasks', { action: t('createTask') })}
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-4">
@@ -164,7 +168,7 @@ export default function TasksPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-2">
-                          <CardTitle className="text-lg">任务 #{task.id}</CardTitle>
+                          <CardTitle className="text-lg">{t('taskCardTitle', { id: task.id })}</CardTitle>
                           <Badge
                             variant="secondary"
                             className={cn(
@@ -178,26 +182,26 @@ export default function TasksPage() {
                               "h-1.5 w-1.5 rounded-full",
                               task.is_active ? "bg-emerald-500" : "bg-gray-400"
                             )} />
-                            {task.is_active ? "启用" : "停用"}
+                            {task.is_active ? t('taskEnabled') : t('taskDisabled')}
                           </Badge>
                         </div>
                         <div className="flex flex-wrap gap-x-6 gap-y-2">
                           <div className="flex items-center gap-2 text-sm">
                             <IconSourceCode className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                            <span className="text-muted-foreground">源账号</span>
+                            <span className="text-muted-foreground">{t('sourceAccount')}</span>
                             <span className="font-medium">{getAppDisplay(task.connect_source_id)}</span>
                           </div>
                           <div className="flex items-center gap-2 text-sm">
                             <IconSourceCode className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                            <span className="text-muted-foreground">目标账号</span>
+                            <span className="text-muted-foreground">{t('targetAccount')}</span>
                             <span className="font-medium">{getAppDisplay(task.connect_target_id)}</span>
                           </div>
                           <div className="flex items-center gap-2 text-sm">
-                            <span className="text-muted-foreground">执行时间</span>
-                            <span className="font-medium">每天 {task.hour} 点</span>
+                            <span className="text-muted-foreground">{t('executionTime')}</span>
+                            <span className="font-medium">{t('dailyAtHour', { hour: task.hour })}</span>
                           </div>
                           <div className="flex items-center gap-2 text-sm">
-                            <span className="text-muted-foreground">创建时间</span>
+                            <span className="text-muted-foreground">{t('createdAt')}</span>
                             <span className="font-medium font-mono">{dayjs(task.created_at).format('YYYY-MM-DD HH:mm')}</span>
                           </div>
                         </div>
@@ -209,7 +213,7 @@ export default function TasksPage() {
                           onClick={() => router.push(`/dash/task/${task.id}`)}
                         >
                           <IconHistory className="h-4 w-4 mr-1" />
-                          记录
+                          {t('records')}
                         </Button>
                         <Button
                           variant="secondary"
@@ -219,7 +223,7 @@ export default function TasksPage() {
                             setDialogOpen(true);
                           }}
                         >
-                          编辑
+                          {t('edit')}
                         </Button>
                       </div>
                     </div>
