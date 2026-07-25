@@ -26,12 +26,12 @@ function buildErrorSvg(msg: string) {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" font-family="sans-serif"><rect width="100%" height="100%" fill="#fff"/><text x="200" y="100" text-anchor="middle" fill="#888" font-size="16">${S(msg)}</text></svg>`;
 }
 
-function buildPanel(d: DailyHR) {
+function buildPanel(d: DailyHR | null) {
   const items = [
-    { l: 'Max HR', v: String(d.max_heart_rate) },
-    { l: 'Min HR', v: String(d.min_heart_rate) },
-    { l: 'Resting HR', v: String(d.resting_heart_rate) },
-    { l: '7d Avg\nResting', v: String(d.last_seven_days_avg_resting_heart_rate) },
+    { l: 'Max HR', v: d ? String(d.max_heart_rate) : '' },
+    { l: 'Min HR', v: d ? String(d.min_heart_rate) : '' },
+    { l: 'Resting HR', v: d ? String(d.resting_heart_rate) : '' },
+    { l: '7d Avg\nResting', v: d ? String(d.last_seven_days_avg_resting_heart_rate) : '' },
   ];
   const spacing = (CHART_H - 60) / items.length;
   const cx = CHART_W + PANEL_W / 2;
@@ -46,6 +46,38 @@ function buildPanel(d: DailyHR) {
   });
   out += `<line x1="${CHART_W}" y1="0" x2="${CHART_W}" y2="${CHART_H}" stroke="#e0e0e0" stroke-width="1"/>`;
   return out;
+}
+
+function buildBlankSvg(daily: DailyHR | null) {
+  const yMin = 0;
+  const yMax = 200;
+  const scaleY = PLOT_H / (yMax - yMin);
+  const tickCount = 6;
+  const yTicks: number[] = [];
+  for (let i = 0; i < tickCount; i++) yTicks.push(yMin + (yMax - yMin) * i / (tickCount - 1));
+
+  let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${TOTAL_W}" height="${CHART_H}" viewBox="0 0 ${TOTAL_W} ${CHART_H}" font-family="Orbitron, 'Courier New', monospace">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&amp;display=swap');
+  </style>
+  <text x="${PAD.left}" y="40" text-anchor="start" fill="#222" font-size="22" font-weight="bold">I Am Still Alive
+</text>`;
+
+  svg += buildGridLines(yTicks, yMin, scaleY);
+
+  for (const y of yTicks) {
+    const yy = toY(y, yMin, scaleY);
+    svg += `<text x="${PAD.left - 8}" y="${yy + 4}" text-anchor="end" fill="#888" font-size="12">${Math.round(y)}</text>`;
+  }
+
+  svg += `<line x1="${PAD.left}" y1="${PAD.top}" x2="${PAD.left}" y2="${PAD.top + PLOT_H}" stroke="#ddd" stroke-width="1"/>`;
+  svg += `<line x1="${PAD.left}" y1="${PAD.top + PLOT_H}" x2="${PAD.left + PLOT_W}" y2="${PAD.top + PLOT_H}" stroke="#ddd" stroke-width="1"/>`;
+
+  svg += buildPanel(daily);
+
+  svg += '</svg>';
+  return svg;
 }
 
 function toY(val: number, yMin: number, scaleY: number) {
@@ -124,7 +156,12 @@ export async function GET(request: NextRequest) {
     const yestJson = yestRes.ok ? await yestRes.json() : { status: 'error' };
     const data: HRData | null = mainJson.status === 'success' ? mainJson.data : null;
     const yesterdayData: HRData | null = yestJson.status === 'success' ? yestJson.data : null;
-    if (!data?.daily || !data.details?.length) return new NextResponse(buildErrorSvg('无数据'), { status: 200, headers: { 'Content-Type': 'image/svg+xml' } });
+    if (!data?.daily || !data.details?.length) {
+      return new NextResponse(buildBlankSvg(data?.daily ?? null), {
+        status: 200,
+        headers: { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=3600' },
+      });
+    }
 
     const tz = (s: string) => dayjs(s).add(8, 'hour');
 
