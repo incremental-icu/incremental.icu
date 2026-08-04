@@ -152,6 +152,16 @@
     "jumpToPageStart": "Jump to",
     "jumpToPageEnd": "page"
   },
+  "ComparePage": {
+    "title": "Activity Data Comparison",
+    "selectAccount": "Select Account",
+    "incrementalSync": "Incremental Sync",
+    "fullSync": "Full Sync",
+    "syncing": "Syncing...",
+    "search": "Search",
+    "searching": "Searching...",
+    "pleaseSelectAccount": "Please select an account first"
+  },
   "FeedPage": {
     "title": "Activities",
     "tableView": "Table View",

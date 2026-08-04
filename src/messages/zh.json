@@ -155,6 +155,16 @@
     "jumpToPageStart": "跳转到 第",
     "jumpToPageEnd": "页"
   },
+  "ComparePage": {
+    "title": "运动数据对比",
+    "selectAccount": "选择平台账号",
+    "incrementalSync": "增量同步",
+    "fullSync": "全量同步",
+    "syncing": "同步中...",
+    "search": "查询",
+    "searching": "查询中...",
+    "pleaseSelectAccount": "请先选择账号"
+  },
   "FeedPage": {
     "title": "运动数据",
     "tableView": "表格视图",
