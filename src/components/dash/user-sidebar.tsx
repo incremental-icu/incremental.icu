@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { IconUser } from "@tabler/icons-react"
+import { IconUser, IconKey } from "@tabler/icons-react"
 
 import {
   Sidebar,
@@ -17,7 +17,8 @@ import {
 
 const USER_MENU_ITEMS = [
   { name: "Profile", href: "/dash/profile", icon: IconUser },
-  { name: "Apps", href: "/dash/accounts", icon: IconUser }
+  { name: "Apps", href: "/dash/accounts", icon: IconUser },
+  { name: "GPT Code", href: "/dash/settings/gpt", icon: IconKey }
 ]
 
 export function UserSidebar({

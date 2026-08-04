@@ -17,6 +17,7 @@
     "garminCn": "佳明中国版",
     "coros": "高驰",
     "accounts": "账号管理",
+    "gptCode": "GPT 授权码",
     "logs": "操作日志",
     "dash": "一键同步",
     "userSettings": "用户设置",
@@ -166,5 +167,24 @@
   },
   "SettingPage": {
     "myAccount": "我的账号"
+  },
+  "GptCodePage": {
+    "title": "GPT 授权码",
+    "desc": "用于 OpenAI / ChatGPT 连接 incremental.icu 时的登录授权。",
+    "codeLabel": "当前授权码",
+    "expireIn": "剩余 {s} 秒后过期",
+    "expired": "验证码已过期，正在刷新…",
+    "refresh": "生成新验证码",
+    "refreshed": "已生成新验证码",
+    "copy": "复制",
+    "copied": "已复制",
+    "copyFailed": "复制失败",
+    "loading": "加载中…",
+    "loadError": "获取验证码失败，请稍后重试",
+    "howToTitle": "如何使用",
+    "step1": "在 OpenAI / ChatGPT 中连接 incremental.icu，浏览器会跳转到授权页面。",
+    "step2": "打开本页面，复制上面的 6 位授权码。",
+    "step3": "在授权页面输入该验证码，点击「登录并授权」即可完成连接。",
+    "tips": "验证码 5 分钟内有效且只能使用一次，请勿泄露给他人。"
   }
 }
