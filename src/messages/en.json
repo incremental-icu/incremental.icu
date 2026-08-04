@@ -21,6 +21,7 @@
     "logout": "Logout",
     "dash": "Dashboard",
     "accounts": "Accounts",
+    "gptCode": "GPT Auth Code",
     "logs": "Logs"
   },
   "LoginPage": {
@@ -163,5 +164,24 @@
   },
   "SettingPage": {
     "myAccount": "My Account"
+  },
+  "GptCodePage": {
+    "title": "GPT Auth Code",
+    "desc": "Used to authorize OpenAI / ChatGPT connections to incremental.icu.",
+    "codeLabel": "Current Code",
+    "expireIn": "Expires in {s}s",
+    "expired": "Code expired, refreshing...",
+    "refresh": "Generate New Code",
+    "refreshed": "New code generated",
+    "copy": "Copy",
+    "copied": "Copied",
+    "copyFailed": "Copy failed",
+    "loading": "Loading...",
+    "loadError": "Failed to fetch code, please try again",
+    "howToTitle": "How to use",
+    "step1": "Connect incremental.icu in OpenAI / ChatGPT, your browser will be redirected to the authorization page.",
+    "step2": "Open this page and copy the 6-digit code above.",
+    "step3": "Enter the code on the authorization page and click \"Log in and authorize\" to complete the connection.",
+    "tips": "The code is valid for 5 minutes and can only be used once. Do not share it with anyone."
   }
 }
