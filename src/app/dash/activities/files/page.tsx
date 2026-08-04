@@ -82,6 +82,7 @@ interface Activity {
   source_type: string;
   created_at: string;
   file_name?: string | null;
+  file_size?: number | null;
 }
 
 interface DetailedActivity {
@@ -114,6 +115,7 @@ const ActivityFilesPage = () => {
   const [loadingActivityDetail, setLoadingActivityDetail] = useState(false);
   const [pushing, setPushing] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [caching, setCaching] = useState<Set<number>>(new Set());
   const [apps, setApps] = useState<AppConfig[]>([]);
   const [pushResult, setPushResult] = useState<{ success: boolean; result: any } | null>(null);
 
@@ -310,6 +312,40 @@ const ActivityFilesPage = () => {
     }
   };
 
+  const formatFileSize = (size?: number | null) => {
+    if (size === null || size === undefined) return '--';
+    if (size < 1024) return `${size} B`;
+    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+    return `${(size / (1024 * 1024)).toFixed(2)} MB`;
+  };
+
+  const handleCache = async (activityId: number) => {
+    if (caching.has(activityId)) return;
+    setCaching((prev) => new Set(prev).add(activityId));
+    try {
+      const response = await authFetch(
+        `/api/v1/base/cacheActivityFit/${activityId}`,
+        { method: 'POST' }
+      );
+      const result = await response.json();
+      if (result.status === "success") {
+        toast.success(result.message || "文件缓存成功");
+        await fetchActivities();
+      } else {
+        toast.error(result.message || "文件缓存失败");
+      }
+    } catch (error) {
+      console.error("Failed to cache activity:", error);
+      toast.error("缓存请求失败");
+    } finally {
+      setCaching((prev) => {
+        const next = new Set(prev);
+        next.delete(activityId);
+        return next;
+      });
+    }
+  };
+
   const fetchActivityDetails = useCallback(async (activityId: number) => {
     setLoadingActivityDetail(true);
     setSelectedActivityDetail(null);
@@ -332,16 +368,6 @@ const ActivityFilesPage = () => {
       setLoadingActivityDetail(false);
     }
   }, []);
-
-  const formatDuration = (seconds: number) => {
-    if (seconds === null || seconds === undefined) return '--';
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = Math.floor(seconds % 60);
-    const parts = [m.toString().padStart(2, '0'), s.toString().padStart(2, '0')];
-    if (h > 0) parts.unshift(h.toString().padStart(2, '0'));
-    return parts.join(':');
-  };
 
   const handlePushToPlatform = async (selectedActivityId: number, targetConnectId: number) => {
     if (pushing) return;
@@ -543,23 +569,21 @@ const ActivityFilesPage = () => {
               <th className="px-4 py-3 font-medium">{t("name")}</th>
               <th className="px-4 py-3 font-medium">{t("startTime")}</th>
               <th className="px-4 py-3 font-medium text-right max-[768px]:hidden">{t("distance")}</th>
-              <th className="px-4 py-3 font-medium text-right max-[768px]:hidden">{t("movingTime")}</th>
-              <th className="px-4 py-3 font-medium text-right max-[768px]:hidden">{t("totalTime")}</th>
-              <th className="px-4 py-3 font-medium text-right max-[768px]:hidden">{t("averageHr")}</th>
-              <th className="px-4 py-3 font-medium text-right max-[768px]:hidden">{t("elevation")}</th>
               <th className="px-4 py-3 font-medium">文件名</th>
+              <th className="px-4 py-3 font-medium text-right max-[768px]:hidden">文件大小</th>
+              <th className="px-4 py-3 font-medium w-24">操作</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {loading ? (
               <tr>
-                <td colSpan={9} className="px-4 py-12 text-center text-muted-foreground">
+                <td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">
                   {t("loadingActivity")}
                 </td>
               </tr>
             ) : activities.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-4 py-12 text-center text-muted-foreground">
+                <td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">
                   {t("noActivityFound")}
                 </td>
               </tr>
@@ -601,20 +625,24 @@ const ActivityFilesPage = () => {
                     <td className="px-4 py-3 text-muted-foreground font-mono text-right whitespace-nowrap max-[768px]:hidden">
                       {(act.distance_meters / 1000).toFixed(2)} km
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground font-mono text-right whitespace-nowrap max-[768px]:hidden">
-                      {formatDuration(act.moving_duration_seconds)}
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground font-mono text-right whitespace-nowrap max-[768px]:hidden">
-                      {formatDuration(act.duration_seconds)}
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground font-mono text-right whitespace-nowrap max-[768px]:hidden">
-                      {act.average_hr ? `${act.average_hr} bpm` : '--'}
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground font-mono text-right whitespace-nowrap max-[768px]:hidden">
-                      {act.elevation_gain} m
-                    </td>
                     <td className="px-4 py-3 text-muted-foreground font-mono whitespace-nowrap">
                       {act.file_name || '--'}
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground font-mono text-right whitespace-nowrap max-[768px]:hidden">
+                      {formatFileSize(act.file_size)}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={caching.has(act.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCache(act.id);
+                        }}
+                      >
+                        {caching.has(act.id) ? '缓存中...' : '缓存'}
+                      </Button>
                     </td>
                   </tr>
                   <DialogContent className="sm:max-w-4xl max-h-3xl flex flex-col">
