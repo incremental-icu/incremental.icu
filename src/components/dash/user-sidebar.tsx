@@ -18,7 +18,7 @@ import {
 const USER_MENU_ITEMS = [
   { name: "Profile", href: "/dash/profile", icon: IconUser },
   { name: "Apps", href: "/dash/accounts", icon: IconUser },
-  { name: "GPT Code", href: "/dash/settings/gpt", icon: IconKey }
+  { name: "GPT Code", href: "/dash/gpt", icon: IconKey }
 ]
 
 export function UserSidebar({
