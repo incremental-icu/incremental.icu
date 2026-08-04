@@ -162,7 +162,7 @@ export function SiteHeader() {
                 <DropdownMenuItem onClick={() => router.push('/dash/task')} className="focus:bg-primary/50">
                   <span>{t("task")}</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push('/dash/supabase')} className="focus:bg-primary/50">
+                <DropdownMenuItem onClick={() => router.push('/dash/files')} className="focus:bg-primary/50">
                   <span>文件管理</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
