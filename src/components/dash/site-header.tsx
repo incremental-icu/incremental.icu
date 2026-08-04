@@ -162,6 +162,9 @@ export function SiteHeader() {
                 <DropdownMenuItem onClick={() => router.push('/dash/task')} className="focus:bg-primary/50">
                   <span>{t("task")}</span>
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/dash/files')} className="focus:bg-primary/50">
+                  <span>文件管理</span>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950">
                   <span>{t("logout")}</span>

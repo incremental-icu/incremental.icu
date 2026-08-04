@@ -155,6 +155,16 @@
     "jumpToPageStart": "跳转到 第",
     "jumpToPageEnd": "页"
   },
+  "ComparePage": {
+    "title": "运动数据对比",
+    "selectAccount": "选择平台账号",
+    "incrementalSync": "增量同步",
+    "fullSync": "全量同步",
+    "syncing": "同步中...",
+    "search": "查询",
+    "searching": "查询中...",
+    "pleaseSelectAccount": "请先选择账号"
+  },
   "FeedPage": {
     "title": "运动数据",
     "tableView": "表格视图",
@@ -186,5 +196,23 @@
     "step2": "打开本页面，复制上面的 6 位授权码。",
     "step3": "在授权页面输入该验证码，点击「登录并授权」即可完成连接。",
     "tips": "验证码 5 分钟内有效且只能使用一次，请勿泄露给他人。"
+  },
+  "SupabasePage": {
+    "title": "Supabase 文件管理",
+    "description": "管理 Supabase 存储桶中的文件列表，支持增量同步和全量同步。",
+    "incrementalSync": "增量同步",
+    "fullSync": "全量同步",
+    "loading": "加载中...",
+    "noFiles": "暂无文件记录",
+    "noFilesHint": "点击右上角的增量同步或全量同步按钮从 Supabase 拉取文件列表",
+    "fileName": "文件名",
+    "fileKey": "文件路径",
+    "fileSize": "大小",
+    "contentType": "MIME 类型",
+    "lastModified": "最后修改时间",
+    "syncedAt": "同步时间",
+    "fetchError": "获取文件列表失败",
+    "syncError": "同步失败，请稍后重试",
+    "syncSuccess": "同步完成，共 {total} 个文件，新增 {inserted} 个，更新 {updated} 个，删除 {deleted} 个"
   }
 }

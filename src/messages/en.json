@@ -152,6 +152,16 @@
     "jumpToPageStart": "Jump to",
     "jumpToPageEnd": "page"
   },
+  "ComparePage": {
+    "title": "Activity Data Comparison",
+    "selectAccount": "Select Account",
+    "incrementalSync": "Incremental Sync",
+    "fullSync": "Full Sync",
+    "syncing": "Syncing...",
+    "search": "Search",
+    "searching": "Searching...",
+    "pleaseSelectAccount": "Please select an account first"
+  },
   "FeedPage": {
     "title": "Activities",
     "tableView": "Table View",
@@ -183,5 +193,23 @@
     "step2": "Open this page and copy the 6-digit code above.",
     "step3": "Enter the code on the authorization page and click \"Log in and authorize\" to complete the connection.",
     "tips": "The code is valid for 5 minutes and can only be used once. Do not share it with anyone."
+  },
+  "SupabasePage": {
+    "title": "Supabase File Management",
+    "description": "Manage files in the Supabase storage bucket. Supports incremental and full sync.",
+    "incrementalSync": "Incremental Sync",
+    "fullSync": "Full Sync",
+    "loading": "Loading...",
+    "noFiles": "No file records",
+    "noFilesHint": "Click the incremental or full sync button above to pull the file list from Supabase",
+    "fileName": "File Name",
+    "fileKey": "File Path",
+    "fileSize": "Size",
+    "contentType": "MIME Type",
+    "lastModified": "Last Modified",
+    "syncedAt": "Synced At",
+    "fetchError": "Failed to fetch file list",
+    "syncError": "Sync failed, please try again later",
+    "syncSuccess": "Sync completed: {total} files, {inserted} inserted, {updated} updated, {deleted} deleted"
   }
 }

@@ -81,14 +81,15 @@ interface Activity {
   average_hr?: number;
   source_type: string;
   created_at: string;
+  file_name?: string | null;
+  file_size?: number | null;
 }
 
-// Assuming CorosActivity and GarminActivity have similar structures but might differ in fields.
-// For now, let's use a generic object for detailed activity.
 interface DetailedActivity {
   [key: string]: any;
 }
-const ActivityListPage = () => {
+
+const ActivityFilesPage = () => {
   const t = useTranslations('ListPage');
   const tFeed = useTranslations('FeedPage');
   const { layout } = useLayout();
@@ -114,10 +115,10 @@ const ActivityListPage = () => {
   const [loadingActivityDetail, setLoadingActivityDetail] = useState(false);
   const [pushing, setPushing] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [caching, setCaching] = useState<Set<number>>(new Set());
   const [apps, setApps] = useState<AppConfig[]>([]);
   const [pushResult, setPushResult] = useState<{ success: boolean; result: any } | null>(null);
 
-  // 当 URL 参数变化时（如点击浏览器后退），同步本地状态
   useEffect(() => {
     setStartDate(searchParams.get('startDate') || "");
     setEndDate(searchParams.get('endDate') || "");
@@ -125,9 +126,6 @@ const ActivityListPage = () => {
     setSearchName(searchParams.get('name') || "");
   }, [searchParams]);
 
-
-
-  // 处理平台切换逻辑：统一使用 connect_id 并重置页码和列表
   const handlePlatformChange = useCallback((id: string) => {
     setActivities([]);
     setTotal(0);
@@ -148,7 +146,6 @@ const ActivityListPage = () => {
       const data: AppConfig[] = await response.json();
       setApps(data);
 
-      // Auto-select the first active platform if none is selected
       if (!appSelected && data.length > 0) {
         const firstActive = data.find(a => a.is_active) || data[0];
         handlePlatformChange(firstActive.id.toString());
@@ -165,12 +162,10 @@ const ActivityListPage = () => {
     fetchAppsStatus();
   }, [fetchAppsStatus]);
 
-  // 对接后端分页接口
   const fetchActivities = useCallback(async () => {
     if (!appSelected) return;
 
     setLoading(true);
-    // 获取 URL 中的最新参数进行查询，确保只有“已提交”的条件生效
     const currentParams = new URLSearchParams(window.location.search);
     const urlStartDate = currentParams.get('startDate');
     const urlEndDate = currentParams.get('endDate');
@@ -194,7 +189,7 @@ const ActivityListPage = () => {
 
 
       const response = await authFetch(
-        `/api/v1/base/getActivitiesByPage?${queryParams.toString()}`
+        `/api/v1/base/getActivitiesByPageWithFiles?${queryParams.toString()}`
       );
       const result = await response.json();
       if (result.status === "success") {
@@ -230,7 +225,6 @@ const ActivityListPage = () => {
     setSportType(value === 'all' ? "" : value);
   };
 
-  // 处理点击查询按钮：将当前所有本地状态同步到 URL，触发 useEffect 中的 fetchActivities
   const handleSearch = () => {
     const params = new URLSearchParams(searchParams.toString());
     if (startDate) params.set('startDate', startDate); else params.delete('startDate');
@@ -318,6 +312,40 @@ const ActivityListPage = () => {
     }
   };
 
+  const formatFileSize = (size?: number | null) => {
+    if (size === null || size === undefined) return '--';
+    if (size < 1024) return `${size} B`;
+    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+    return `${(size / (1024 * 1024)).toFixed(2)} MB`;
+  };
+
+  const handleCache = async (activityId: number) => {
+    if (caching.has(activityId)) return;
+    setCaching((prev) => new Set(prev).add(activityId));
+    try {
+      const response = await authFetch(
+        `/api/v1/base/cacheActivityFit/${activityId}`,
+        { method: 'POST' }
+      );
+      const result = await response.json();
+      if (result.status === "success") {
+        toast.success(result.message || "文件缓存成功");
+        await fetchActivities();
+      } else {
+        toast.error(result.message || "文件缓存失败");
+      }
+    } catch (error) {
+      console.error("Failed to cache activity:", error);
+      toast.error("缓存请求失败");
+    } finally {
+      setCaching((prev) => {
+        const next = new Set(prev);
+        next.delete(activityId);
+        return next;
+      });
+    }
+  };
+
   const fetchActivityDetails = useCallback(async (activityId: number) => {
     setLoadingActivityDetail(true);
     setSelectedActivityDetail(null);
@@ -341,22 +369,6 @@ const ActivityListPage = () => {
     }
   }, []);
 
-  const formatDuration = (seconds: number) => {
-    if (seconds === null || seconds === undefined) return '--';
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = Math.floor(seconds % 60);
-    const parts = [m.toString().padStart(2, '0'), s.toString().padStart(2, '0')];
-    if (h > 0) parts.unshift(h.toString().padStart(2, '0'));
-    return parts.join(':');
-  };
-
-  /**
-   * 把指定活动数据推送到目标账号
-   * @param selectedActivityId 运动数据 ID
-   * @param targetConnectId 目标账号 ID
-   * @returns 
-   */
   const handlePushToPlatform = async (selectedActivityId: number, targetConnectId: number) => {
     if (pushing) return;
     setPushResult(null);
@@ -390,9 +402,7 @@ const ActivityListPage = () => {
       })
       .filter(p => p.id !== currentConnectId);
 
-    // Deduplicate by id (source_type) to avoid showing multiple buttons for the same platform type
     const seen = new Set();
-    // 返回除当前平台外的其他平台
     return pushTargets.filter(p => {
       if (seen.has(p.id)) return false;
       seen.add(p.id);
@@ -559,22 +569,21 @@ const ActivityListPage = () => {
               <th className="px-4 py-3 font-medium">{t("name")}</th>
               <th className="px-4 py-3 font-medium">{t("startTime")}</th>
               <th className="px-4 py-3 font-medium text-right max-[768px]:hidden">{t("distance")}</th>
-              <th className="px-4 py-3 font-medium text-right max-[768px]:hidden">{t("movingTime")}</th>
-              <th className="px-4 py-3 font-medium text-right max-[768px]:hidden">{t("totalTime")}</th>
-              <th className="px-4 py-3 font-medium text-right max-[768px]:hidden">{t("averageHr")}</th>
-              <th className="px-4 py-3 font-medium text-right max-[768px]:hidden">{t("elevation")}</th>
+              <th className="px-4 py-3 font-medium">文件名</th>
+              <th className="px-4 py-3 font-medium text-right max-[768px]:hidden">文件大小</th>
+              <th className="px-4 py-3 font-medium w-24">操作</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {loading ? (
               <tr>
-                <td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">
+                <td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">
                   {t("loadingActivity")}
                 </td>
               </tr>
             ) : activities.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">
+                <td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">
                   {t("noActivityFound")}
                 </td>
               </tr>
@@ -583,10 +592,10 @@ const ActivityListPage = () => {
                 <Dialog key={act.activity_id || i} onOpenChange={(open) => {
                   if (open) {
                     fetchActivityDetails(act.id);
-                    setPushResult(null); // Clear previous push result when opening dialog
+                    setPushResult(null);
                   } else {
-                    setSelectedActivityDetail(null); // Clear details when dialog closes
-                    setPushResult(null); // Also clear push result when closing dialog
+                    setSelectedActivityDetail(null);
+                    setPushResult(null);
                   }
                 }}>
                   <tr className="hover:bg-muted/30 even:bg-muted/20 transition-colors group">
@@ -616,17 +625,24 @@ const ActivityListPage = () => {
                     <td className="px-4 py-3 text-muted-foreground font-mono text-right whitespace-nowrap max-[768px]:hidden">
                       {(act.distance_meters / 1000).toFixed(2)} km
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground font-mono text-right whitespace-nowrap max-[768px]:hidden">
-                      {formatDuration(act.moving_duration_seconds)}
+                    <td className="px-4 py-3 text-muted-foreground font-mono whitespace-nowrap">
+                      {act.file_name || '--'}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground font-mono text-right whitespace-nowrap max-[768px]:hidden">
-                      {formatDuration(act.duration_seconds)}
+                      {formatFileSize(act.file_size)}
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground font-mono text-right whitespace-nowrap max-[768px]:hidden">
-                      {act.average_hr ? `${act.average_hr} bpm` : '--'}
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground font-mono text-right whitespace-nowrap max-[768px]:hidden">
-                      {act.elevation_gain} m
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={caching.has(act.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCache(act.id);
+                        }}
+                      >
+                        {caching.has(act.id) ? '缓存中...' : '缓存'}
+                      </Button>
                     </td>
                   </tr>
                   <DialogContent className="sm:max-w-4xl max-h-3xl flex flex-col">
@@ -635,7 +651,7 @@ const ActivityListPage = () => {
                         {act.source_type} - {act.activity_name} - {dayjs(act.start_time_local).format('YYYY-MM-DD HH:mm')}
                       </DialogTitle>
                       <DialogDescription className="sr-only">
-                        显示该活动的详细原始数据和平台指标。
+                        {act.file_name ? `文件: ${act.file_name}` : '显示该活动的详细原始数据和平台指标。'}
                       </DialogDescription>
                     </DialogHeader>
 
@@ -700,4 +716,4 @@ const ActivityListPage = () => {
   );
 };
 
-export default ActivityListPage;
+export default ActivityFilesPage;
