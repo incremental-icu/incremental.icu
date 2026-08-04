@@ -156,7 +156,7 @@ export function SiteHeader() {
                 <DropdownMenuItem onClick={() => router.push('/dash/accounts')} className="focus:bg-primary/50">
                   <span>{t("accounts")}</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push('/dash/settings/gpt')} className="focus:bg-primary/50">
+                <DropdownMenuItem onClick={() => router.push('/dash/gpt')} className="focus:bg-primary/50">
                   <span>{t("gptCode")}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push('/dash/task')} className="focus:bg-primary/50">

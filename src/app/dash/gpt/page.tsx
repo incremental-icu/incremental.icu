@@ -83,7 +83,7 @@ export default function GptCodePage() {
   };
 
   return (
-    <div className="w-full max-w-2xl flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+    <div className="w-full max-w-2xl flex flex-col gap-4 py-4 mx-auto md:gap-6 md:py-6">
       <div className="space-y-1">
         <h1 className="text-xl font-semibold">{t("title")}</h1>
         <p className="text-sm text-muted-foreground">{t("desc")}</p>
