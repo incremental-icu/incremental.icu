@@ -6,7 +6,9 @@ import { useLayout } from '@/hooks/use-layout';
 import { cn } from '@/lib/utils';
 import { formatDistance } from '@/lib/activities';
 import { Button } from '@/components/ui/button';
-import { IconChevronLeft, IconChevronRight, IconRefresh } from '@tabler/icons-react';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { IconCalendar, IconRefresh } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 
 interface MainActivity {
@@ -37,7 +39,7 @@ function getSportColor(sportType: string): string {
   if (s.includes('run') || s.includes('跑')) return 'bg-green-500';
   if (s.includes('cycl') || s.includes('bike') || s.includes('骑') || s.includes('ride')) return 'bg-orange-500';
   if (s.includes('swim') || s.includes('游')) return 'bg-blue-500';
-  if (s.includes('walk') || s.includes('walk')) return 'bg-yellow-500';
+  if (s.includes('walk') || s.includes('走')) return 'bg-yellow-500';
   return 'bg-gray-400';
 }
 
@@ -83,25 +85,28 @@ interface WeekRow {
   runningDistance: number;
 }
 
-function groupByWeek(activities: MainActivity[]): WeekRow[] {
-  const weekMap = new Map<string, WeekRow>();
+/** Build 6 week rows ending with the week containing the reference date (newest first) */
+function buildWeekRows(activities: MainActivity[], referenceDate: string): WeekRow[] {
+  const refMonday = getWeekStart(dayjs(referenceDate));
+  const byMonday = new Map<string, WeekRow>();
 
   for (const a of activities) {
     const d = dayjs(a.start_time_local);
     const monday = getWeekStart(d);
     const key = monday.format('YYYY-MM-DD');
 
-    if (!weekMap.has(key)) {
-      weekMap.set(key, {
+    let row = byMonday.get(key);
+    if (!row) {
+      row = {
         weekStart: monday,
         weekEnd: monday.add(6, 'day'),
         activities: [],
         totalDistance: 0,
         runningDistance: 0,
-      });
+      };
+      byMonday.set(key, row);
     }
 
-    const row = weekMap.get(key)!;
     row.activities.push({ ...a, dateStr: d.format('YYYY-MM-DD') });
     row.totalDistance += a.distance_meters;
     const sport = a.sport_type_raw.toLowerCase();
@@ -110,10 +115,21 @@ function groupByWeek(activities: MainActivity[]): WeekRow[] {
     }
   }
 
-  // Sort weeks descending (newest first)
-  return Array.from(weekMap.values()).sort((a, b) =>
-    b.weekStart.valueOf() - a.weekStart.valueOf()
-  );
+  const rows: WeekRow[] = [];
+  for (let i = 0; i < 6; i++) {
+    const monday = refMonday.subtract(i, 'week');
+    const key = monday.format('YYYY-MM-DD');
+    rows.push(
+      byMonday.get(key) ?? {
+        weekStart: monday,
+        weekEnd: monday.add(6, 'day'),
+        activities: [],
+        totalDistance: 0,
+        runningDistance: 0,
+      }
+    );
+  }
+  return rows;
 }
 
 export default function MainFeedPage() {
@@ -124,15 +140,17 @@ export default function MainFeedPage() {
   const [syncing, setSyncing] = useState(false);
 
   const today = dayjs();
-  const [currentYear, setCurrentYear] = useState(today.year());
-  const [currentMonth, setCurrentMonth] = useState(today.month() + 1);
+  const [referenceDate, setReferenceDate] = useState(today.format('YYYY-MM-DD'));
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+
+  const ref = dayjs(referenceDate);
 
   useEffect(() => {
     let cancelled = false;
     const fetchActivities = async () => {
       setLoading(true);
       try {
-        const response = await authFetch(`/api/v1/main/getActivitiesByMonth?year=${currentYear}&month=${currentMonth}`);
+        const response = await authFetch(`/api/v1/main/getActivitiesByWeek?date=${referenceDate}`);
         if (response.ok) {
           const result = await response.json();
           if (!cancelled) {
@@ -147,31 +165,17 @@ export default function MainFeedPage() {
     };
     fetchActivities();
     return () => { cancelled = true; };
-  }, [currentYear, currentMonth]);
+  }, [referenceDate]);
 
-  const weekRows = useMemo(() => groupByWeek(activities), [activities]);
+  const weekRows = useMemo(() => buildWeekRows(activities, referenceDate), [activities, referenceDate]);
 
-  const goToPrevMonth = () => {
-    if (currentMonth === 1) {
-      setCurrentMonth(12);
-      setCurrentYear((y) => y - 1);
-    } else {
-      setCurrentMonth((m) => m - 1);
-    }
-  };
-
-  const goToNextMonth = () => {
-    if (currentMonth === 12) {
-      setCurrentMonth(1);
-      setCurrentYear((y) => y + 1);
-    } else {
-      setCurrentMonth((m) => m + 1);
-    }
+  const handleDateSelect = (date: dayjs.Dayjs) => {
+    setReferenceDate(date.format('YYYY-MM-DD'));
+    setDatePickerOpen(false);
   };
 
   const goToToday = () => {
-    setCurrentYear(today.year());
-    setCurrentMonth(today.month() + 1);
+    setReferenceDate(today.format('YYYY-MM-DD'));
   };
 
   const handleSync = async () => {
@@ -179,7 +183,7 @@ export default function MainFeedPage() {
     try {
       await authFetch('/api/v1/main/syncBaseToMainActivity');
       // Re-fetch activities after sync
-      const response = await authFetch(`/api/v1/main/getActivitiesByMonth?year=${currentYear}&month=${currentMonth}`);
+      const response = await authFetch(`/api/v1/main/getActivitiesByWeek?date=${referenceDate}`);
       if (response.ok) {
         const result = await response.json();
         setActivities(result.data || []);
@@ -202,8 +206,18 @@ export default function MainFeedPage() {
     >
       {/* Header */}
       <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-xl font-semibold">{currentYear}年{currentMonth}月</h1>
+        <div className="flex items-center gap-2">
+          <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-7 px-3">
+                <IconCalendar className="h-3.5 w-3.5" />
+                {ref.format('YYYY年M月D日')}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar selected={ref} onSelect={handleDateSelect} />
+            </PopoverContent>
+          </Popover>
           <Button variant="ghost" size="sm" onClick={goToToday} className="h-7 px-3 text-xs">
             今天
           </Button>
@@ -217,19 +231,16 @@ export default function MainFeedPage() {
             <IconRefresh className={cn('h-3.5 w-3.5', syncing && 'animate-spin')} />
           </Button>
         </div>
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goToPrevMonth}>
-            <IconChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goToNextMonth}>
-            <IconChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
+        {weekRows.length > 0 && (
+          <p className="text-xs text-muted-foreground">
+            {weekRows[weekRows.length - 1].weekStart.format('YYYY/M/D')} – {weekRows[0].weekEnd.format('YYYY/M/D')}
+          </p>
+        )}
       </div>
 
       {loading ? (
         <div className="space-y-6">
-          {Array.from({ length: 4 }).map((_, i) => (
+          {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="flex border-b pb-4">
               <div className="w-32 shrink-0 space-y-1">
                 <div className="h-4 w-20 animate-pulse rounded bg-muted" />
@@ -245,7 +256,7 @@ export default function MainFeedPage() {
             </div>
           ))}
         </div>
-      ) : weekRows.length === 0 ? (
+      ) : activities.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
           <p className="text-sm">暂无运动数据</p>
         </div>
