@@ -569,6 +569,7 @@ const ActivityFilesPage = () => {
               <th className="px-4 py-3 font-medium">{t("name")}</th>
               <th className="px-4 py-3 font-medium">{t("startTime")}</th>
               <th className="px-4 py-3 font-medium text-right max-[768px]:hidden">{t("distance")}</th>
+              <th className="px-4 py-3 font-medium">平台 id</th>
               <th className="px-4 py-3 font-medium">文件名</th>
               <th className="px-4 py-3 font-medium text-right max-[768px]:hidden">文件大小</th>
               <th className="px-4 py-3 font-medium w-24">操作</th>
@@ -577,13 +578,13 @@ const ActivityFilesPage = () => {
           <tbody className="divide-y divide-border">
             {loading ? (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">
+                <td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">
                   {t("loadingActivity")}
                 </td>
               </tr>
             ) : activities.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">
+                <td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">
                   {t("noActivityFound")}
                 </td>
               </tr>
@@ -624,6 +625,9 @@ const ActivityFilesPage = () => {
                     </td>
                     <td className="px-4 py-3 text-muted-foreground font-mono text-right whitespace-nowrap max-[768px]:hidden">
                       {(act.distance_meters / 1000).toFixed(2)} km
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground font-mono whitespace-nowrap">
+                      {act.activity_id}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground font-mono whitespace-nowrap">
                       {act.file_name || '--'}
