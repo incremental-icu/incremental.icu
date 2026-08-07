@@ -197,6 +197,8 @@
   "SupabasePage": {
     "title": "Supabase File Management",
     "description": "Manage files in the Supabase storage bucket. Supports incremental and full sync.",
+    "search": "Search",
+    "searchPlaceholder": "Search by file name",
     "incrementalSync": "Incremental Sync",
     "fullSync": "Full Sync",
     "loading": "Loading...",
