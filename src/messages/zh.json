@@ -200,6 +200,8 @@
   "SupabasePage": {
     "title": "Supabase 文件管理",
     "description": "管理 Supabase 存储桶中的文件列表，支持增量同步和全量同步。",
+    "search": "查询",
+    "searchPlaceholder": "按文件名查询",
     "incrementalSync": "增量同步",
     "fullSync": "全量同步",
     "loading": "加载中...",

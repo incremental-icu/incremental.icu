@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { authFetch } from "@/lib/api";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -20,6 +21,7 @@ import {
   IconRefresh,
   IconCloudDownload,
   IconFile,
+  IconSearch,
 } from "@tabler/icons-react";
 import { Pagination } from "@/components/dash/pagination";
 
@@ -58,12 +60,21 @@ export default function SupabasePage() {
   const [limit, setLimit] = useState(50);
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [searchName, setSearchName] = useState("");
 
   const fetchFiles = useCallback(async () => {
     setLoading(true);
     try {
+      const params = new URLSearchParams({
+        page: String(page),
+        page_size: String(limit),
+      });
+      const trimmedName = searchName.trim();
+      if (trimmedName) {
+        params.append("name", trimmedName);
+      }
       const response = await authFetch(
-        `/api/v1/supabase/files?page=${page}&page_size=${limit}`
+        `/api/v1/supabase/files?${params.toString()}`
       );
       if (!response.ok) throw new Error("Failed to fetch files");
       const data: FileListResponse = await response.json();
@@ -75,7 +86,7 @@ export default function SupabasePage() {
     } finally {
       setLoading(false);
     }
-  }, [page, limit, t]);
+  }, [page, limit, searchName, t]);
 
   useEffect(() => {
     fetchFiles();
@@ -125,25 +136,53 @@ export default function SupabasePage() {
       <div className="flex flex-col gap-6 py-4 md:py-6">
         <section>
           {/* 顶部操作栏 */}
-          <div className="flex items-center justify-end gap-2 mb-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleSync("incremental")}
-              disabled={syncing}
-            >
-              <IconRefresh className={cn("h-4 w-4 mr-2", syncing && "animate-spin")} />
-              {t("incrementalSync")}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleSync("full")}
-              disabled={syncing}
-            >
-              <IconCloudDownload className="h-4 w-4 mr-2" />
-              {t("fullSync")}
-            </Button>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Input
+                type="text"
+                placeholder={t("searchPlaceholder")}
+                value={searchName}
+                onChange={(e) => setSearchName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    setPage(1);
+                    fetchFiles();
+                  }
+                }}
+                className="w-full sm:w-64"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setPage(1);
+                  fetchFiles();
+                }}
+              >
+                <IconSearch className="h-4 w-4 mr-2" />
+                {t("search")}
+              </Button>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleSync("incremental")}
+                disabled={syncing}
+              >
+                <IconRefresh className={cn("h-4 w-4 mr-2", syncing && "animate-spin")} />
+                {t("incrementalSync")}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleSync("full")}
+                disabled={syncing}
+              >
+                <IconCloudDownload className="h-4 w-4 mr-2" />
+                {t("fullSync")}
+              </Button>
+            </div>
           </div>
 
           {/* 表格 */}
