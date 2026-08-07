@@ -120,15 +120,16 @@ function FeatureCard({ title, desc, icon }: { title: string; desc: string; icon:
 
 function Carousel3D() {
   const [activeIndex, setActiveIndex] = useState(0);
-  const images = ['/dash_0.webp', '/dash_1.webp', '/dash_2.webp'];
+  const images = ['/screenshot/dash_0.webp', '/screenshot/dash_1.webp', '/screenshot/dash_2.webp', '/screenshot/dash_3.webp', '/screenshot/dash_4.webp'];
 
   return (
     <div className="carousel-3d">
       <div className="carousel-3d-track">
         {images.map((src, i) => {
           const offset = ((i - activeIndex + images.length) % images.length);
-          let isCenter = offset === 0;
-          let isLeft = offset === images.length - 1;
+          const dist = Math.min(offset, images.length - offset);
+          const dir = offset === 0 ? 0 : (offset <= images.length - offset ? 1 : -1);
+          const isCenter = dist === 0;
 
           return (
             <div
@@ -138,11 +139,9 @@ function Carousel3D() {
               style={{
                 transform: isCenter
                   ? 'translateX(0) scale(1) translateZ(0)'
-                  : isLeft
-                    ? 'translateX(-55%) scale(0.7) translateZ(-120px)'
-                    : 'translateX(55%) scale(0.7) translateZ(-120px)',
-                opacity: isCenter ? 1 : 0.6,
-                zIndex: isCenter ? 3 : 1,
+                  : `translateX(${dir * (34 + 27 * dist)}%) scale(${(1 - dist * 0.18).toFixed(2)}) translateZ(${-dist * 140}px)`,
+                opacity: 1,
+                zIndex: images.length - dist,
                 overflow: isCenter ? 'visible' : 'hidden',
                 aspectRatio: isCenter ? 'auto' : '16/14',
                 width: isCenter ? 'auto' : '680px',
@@ -169,7 +168,7 @@ function Carousel3D() {
           align-items: center;
           position: relative;
           width: 100%;
-          min-height: 420px;
+          min-height: 620px;
         }
         .carousel-3d-slide {
           position: absolute;
@@ -198,7 +197,7 @@ function Carousel3D() {
         }
         @media (max-width: 768px) {
           .carousel-3d-image.center { width: 320px; }
-          .carousel-3d-track { min-height: 200px; }
+          .carousel-3d-track { min-height: 300px; }
         }
       `}</style>
     </div>
