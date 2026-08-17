@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
+import { useSearchParams, usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { authFetch } from "@/lib/api";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -54,13 +54,16 @@ function formatFileSize(bytes: number | null | undefined): string {
 export default function SupabasePage() {
   const t = useTranslations('SupabasePage');
   const { layout } = useLayout();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
   const [files, setFiles] = useState<SupabaseFile[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(50);
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
-  const [searchName, setSearchName] = useState("");
+  const [searchName, setSearchName] = useState(searchParams.get("name") || "");
 
   const fetchFiles = useCallback(async () => {
     setLoading(true);
@@ -69,9 +72,9 @@ export default function SupabasePage() {
         page: String(page),
         page_size: String(limit),
       });
-      const trimmedName = searchName.trim();
-      if (trimmedName) {
-        params.append("name", trimmedName);
+      const urlName = searchParams.get("name");
+      if (urlName) {
+        params.append("name", urlName);
       }
       const response = await authFetch(
         `/api/v1/supabase/files?${params.toString()}`
@@ -86,7 +89,7 @@ export default function SupabasePage() {
     } finally {
       setLoading(false);
     }
-  }, [page, limit, searchName, t]);
+  }, [page, limit, searchParams, t]);
 
   useEffect(() => {
     fetchFiles();
@@ -128,6 +131,18 @@ export default function SupabasePage() {
     setPage(1);
   };
 
+  const handleSearch = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    const trimmedName = searchName.trim();
+    if (trimmedName) {
+      params.set("name", trimmedName);
+    } else {
+      params.delete("name");
+    }
+    setPage(1);
+    router.push(`${pathname}?${params.toString()}`);
+  };
+
   return (
     <div className={cn(
       "flex-1 mx-auto bg-slate-50/50 dark:bg-background text-sm transition-all duration-300 p-6",
@@ -136,53 +151,49 @@ export default function SupabasePage() {
       <div className="flex flex-col gap-6 py-4 md:py-6">
         <section>
           {/* 顶部操作栏 */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Input
+          <div className="bg-card dark:bg-muted/20 p-2 rounded-lg border border-border shadow-sm mb-4 flex items-center gap-3 max-[768px]:flex-wrap max-[768px]:p-3">
+            <div className="relative flex-1 max-w-xs max-[768px]:max-w-full">
+              <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground max-[768px]:left-4 max-[768px]:size-5" size={16} />
+              <input
                 type="text"
-                placeholder={t("searchPlaceholder")}
                 value={searchName}
                 onChange={(e) => setSearchName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    setPage(1);
-                    fetchFiles();
-                  }
-                }}
-                className="w-full sm:w-64"
+                placeholder={t("searchPlaceholder")}
+                className="w-full pl-9 pr-3 py-1.5 border border-border bg-background rounded focus:outline-none focus:ring-1 focus:ring-ring max-[768px]:pl-12 max-[768px]:pr-4 max-[768px]:py-3 max-[768px]:text-base"
               />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setPage(1);
-                  fetchFiles();
-                }}
-              >
-                <IconSearch className="h-4 w-4 mr-2" />
-                {t("search")}
-              </Button>
             </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleSync("incremental")}
-                disabled={syncing}
-              >
-                <IconRefresh className={cn("h-4 w-4 mr-2", syncing && "animate-spin")} />
-                {t("incrementalSync")}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleSync("full")}
-                disabled={syncing}
-              >
-                <IconCloudDownload className="h-4 w-4 mr-2" />
-                {t("fullSync")}
-              </Button>
-            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleSync("incremental")}
+              disabled={syncing}
+              className="ml-auto gap-2 max-[768px]:min-h-[44px] max-[768px]:min-w-[88px]"
+            >
+              <IconRefresh className={cn(syncing && "animate-spin")} />
+              {syncing ? t("syncing") : t("incrementalSync")}
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleSync("full")}
+              disabled={syncing}
+              className="gap-2 max-[768px]:min-h-[44px] max-[768px]:min-w-[88px]"
+            >
+              <IconCloudDownload className="h-4 w-4" />
+              {t("fullSync")}
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={handleSearch}
+              disabled={loading}
+              className="gap-2 max-[768px]:min-h-[44px] max-[768px]:min-w-[88px]"
+            >
+              {loading ? <IconRefresh className="animate-spin" /> : <IconSearch />}
+              {loading ? t("searching") : t("search")}
+            </Button>
           </div>
 
           {/* 表格 */}

@@ -286,6 +286,11 @@ export default function MainFeedPage() {
               dayColumns[dayOfWeek].push(act);
             }
 
+            // Sort each day's activities by start time, earliest first
+            for (const col of dayColumns) {
+              col.sort((a, b) => dayjs(a.start_time_local).valueOf() - dayjs(b.start_time_local).valueOf());
+            }
+
             return (
               <div key={week.weekStart.format('YYYY-MM-DD')} className="flex border-b">
                 {/* Left sidebar: week info */}
