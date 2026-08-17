@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { storage } from '@/lib/storage';
 import { authFetch } from '@/lib/api';
 import dayjs from 'dayjs';
@@ -22,6 +23,7 @@ interface User {
   username?: string;
   email?: string;
   timezone?: string;
+  yearly_target?: number | null;
   updated_at?: string;
 }
 
@@ -42,6 +44,8 @@ export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null);
   const [socials, setSocials] = useState<SocialAccount[]>([]);
   const [loadingSocials, setLoadingSocials] = useState(true);
+  const [yearlyTarget, setYearlyTarget] = useState<string>('');
+  const [savingYearlyTarget, setSavingYearlyTarget] = useState(false);
 
   useEffect(() => {
     const userData = storage.get('user');
@@ -53,6 +57,10 @@ export default function ProfilePage() {
         parsedUser.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
       }
       setUser(parsedUser as User);
+      // 年度跑量目标：未设置时默认当年年份（如 2026）
+      setYearlyTarget(
+        parsedUser.yearly_target?.toString() ?? String(new Date().getFullYear())
+      );
     } catch (error) {
       console.error('解析用户信息失败:', error);
     }
@@ -97,6 +105,40 @@ export default function ProfilePage() {
       }
     } catch (error) {
       console.error('删除账号出错:', error);
+    }
+  };
+
+  const handleSaveYearlyTarget = async () => {
+    const value = Number(yearlyTarget);
+    if (!Number.isInteger(value) || value < 0) {
+      toast.error('请输入有效的年度跑量目标（非负整数）');
+      return;
+    }
+    setSavingYearlyTarget(true);
+    try {
+      const res = await authFetch('/api/v1/user/yearly-target', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ yearly_target: value }),
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        const userData = storage.get('user');
+        if (userData) {
+          const parsed = typeof userData === 'string' ? JSON.parse(userData) : userData;
+          parsed.yearly_target = data.yearly_target;
+          storage.set('user', parsed);
+        }
+        setUser((prev) => prev ? { ...prev, yearly_target: data.yearly_target } : prev);
+        toast.success(`年度跑量目标已更新: ${data.yearly_target} 公里`);
+      } else {
+        toast.error('更新年度跑量目标失败');
+      }
+    } catch (error) {
+      console.error('更新年度跑量目标失败:', error);
+      toast.error('更新年度跑量目标失败，请稍后重试');
+    } finally {
+      setSavingYearlyTarget(false);
     }
   };
 
@@ -146,6 +188,30 @@ export default function ProfilePage() {
                 }
               }}>
                 刷新
+              </Button>
+            </div>
+          </div>
+          <div className="grid items-center gap-4 border-b border-border pb-4">
+            <span className="text-sm text-muted-foreground">年度跑量目标</span>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  min={0}
+                  value={yearlyTarget}
+                  onChange={(e) => setYearlyTarget(e.target.value)}
+                  placeholder="如：2026"
+                  className="w-32"
+                />
+                <span className="text-sm text-muted-foreground">公里</span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSaveYearlyTarget}
+                disabled={savingYearlyTarget}
+              >
+                {savingYearlyTarget ? '保存中...' : '保存'}
               </Button>
             </div>
           </div>
