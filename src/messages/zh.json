@@ -68,6 +68,8 @@
   },
   "DashPage": {
     "oneclickSync": "一键同步",
+    "quickSync": "快速同步",
+    "quickSyncing": "快速同步中...",
     "oneclickSyncDesc": "选择源头和目标平台，点击一键同步后，将自动同步上传最新的 10 条运动数据，系统会自动过滤掉时间和距离相同的重复记录。",
     "fetchMore": "查询更多",
     "account": "账号",

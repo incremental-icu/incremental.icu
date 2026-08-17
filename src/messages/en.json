@@ -65,6 +65,8 @@
   },
   "DashPage": {
     "oneclickSync": "One-Click Sync",
+    "quickSync": "Quick Sync",
+    "quickSyncing": "Quick Syncing...",
     "oneclickSyncDesc": "Connect two or more platforms, click one-click sync, and automatically upload the latest 10 pieces of sports data, filtering out duplicate records with the same time and distance.",
     "fetchMore": "Fetch More",
     "account": "account",

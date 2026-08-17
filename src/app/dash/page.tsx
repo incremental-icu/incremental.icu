@@ -21,6 +21,7 @@ import {
   IconUserCog,
   IconListDetails,
   IconActivity,
+  IconBolt,
 } from "@tabler/icons-react";
 import {
   Select,
@@ -300,6 +301,7 @@ export default function DashPage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isQuickSyncing, setIsQuickSyncing] = useState(false);
   const [sourceId, setSourceId] = useState<string>();
   const [targetId, setTargetId] = useState<string>();
   const [runningData, setRunningData] = useState<RunningTotalData | null>(null);
@@ -475,6 +477,51 @@ export default function DashPage() {
       });
     } catch {
       console.log("SSE execution pipeline final clear.");
+    }
+  };
+
+  const handleQuickSync = async () => {
+    if (isQuickSyncing || !sourceId || !targetId) {
+      if (!isQuickSyncing && (!sourceId || !targetId)) {
+        toast.error(t("selectSourceAndTarget"));
+      }
+      return;
+    }
+
+    setIsQuickSyncing(true);
+    try {
+      const response = await authFetch("/api/v1/base/execute2", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          source_id: sourceId,
+          target_id: targetId,
+          count: 10,
+        }),
+      });
+      const result = await response.json();
+
+      if (result.status === "success") {
+        const data = result.data ?? {};
+        const failedCount = Array.isArray(data.failed) ? data.failed.length : 0;
+        toast.success(result.message || t("syncCompleted"));
+        if (failedCount > 0) {
+          const first = data.failed[0];
+          toast.error(
+            `${first?.error || ""}${data.failed
+              .slice(1)
+              .map((item: { error?: string }) => item.error || "")
+              .filter(Boolean)
+              .join("；")}`.trim() || t("syncFailed")
+          );
+        }
+      } else {
+        toast.error(result.message || t("syncFailed"));
+      }
+    } catch {
+      toast.error(t("syncFailedTryAgain"));
+    } finally {
+      setIsQuickSyncing(false);
     }
   };
 
@@ -655,15 +702,27 @@ export default function DashPage() {
                 </Link>
               </Button>
             </div>
-            <Button
-              size="lg"
-              className="h-12 rounded-full px-8 text-lg shadow-sm"
-              onClick={handleGlobalSync}
-              disabled={isSyncing || !sourceId || !targetId}
-            >
-              <IconRefresh className={cn("h-5 w-5", isSyncing && "animate-spin")} />
-              {isSyncing ? t("syncing") : t("oneclickSync")}
-            </Button>
+            <div className="flex shrink-0 items-center gap-3">
+              <Button
+                variant="outline"
+                size="lg"
+                className="h-12 rounded-full px-8 text-lg shadow-sm"
+                onClick={handleQuickSync}
+                disabled={isQuickSyncing || !sourceId || !targetId}
+              >
+                <IconBolt className={cn("h-5 w-5", isQuickSyncing && "animate-pulse")} />
+                {isQuickSyncing ? t("quickSyncing") : t("quickSync")}
+              </Button>
+              <Button
+                size="lg"
+                className="h-12 rounded-full px-8 text-lg shadow-sm"
+                onClick={handleGlobalSync}
+                disabled={isSyncing || !sourceId || !targetId}
+              >
+                <IconRefresh className={cn("h-5 w-5", isSyncing && "animate-spin")} />
+                {isSyncing ? t("syncing") : t("oneclickSync")}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
