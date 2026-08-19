@@ -1,14 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { storage } from '@/lib/storage';
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useLayout } from "@/hooks/use-layout";
 import { cn } from "@/lib/utils";
 import { authFetch } from "@/lib/api";
-import { fetchEventSource } from "@microsoft/fetch-event-source";
-import { TerminalModal, type LogLine } from "@/components/dash/terminal-modal";
 import {
   IconRefresh,
   IconArrowsLeftRight,
@@ -300,17 +298,11 @@ export default function DashPage() {
   const [apps, setApps] = useState<AppConfig[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
   const [isQuickSyncing, setIsQuickSyncing] = useState(false);
   const [sourceId, setSourceId] = useState<string>();
   const [targetId, setTargetId] = useState<string>();
   const [runningData, setRunningData] = useState<RunningTotalData | null>(null);
   const [runningDataLoading, setRunningDataLoading] = useState(true);
-
-  const [isTerminalOpen, setIsTerminalOpen] = useState(false);
-  const [terminalLogs, setTerminalLogs] = useState<LogLine[]>([]);
-  const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "done" | "error">("idle");
-  const abortControllerRef = useRef<AbortController | null>(null);
 
   const fetchRunningData = async () => {
     try {
@@ -391,95 +383,6 @@ export default function DashPage() {
     }
   };
 
-  const pushTerminalLog = (text: string, level: LogLine["level"] = "info") => {
-    const newLine: LogLine = {
-      time: new Date().toLocaleTimeString(),
-      text,
-      level,
-    };
-    setTerminalLogs((prev) => [...prev, newLine]);
-  };
-
-  const handleGlobalSync = async () => {
-    if (isSyncing || !sourceId || !targetId) {
-      if (!isSyncing && (!sourceId || !targetId)) {
-        toast.error(t("selectSourceAndTarget"));
-      }
-      return;
-    }
-
-    setIsSyncing(true);
-    setSyncStatus("syncing");
-    setTerminalLogs([]);
-    setIsTerminalOpen(true);
-
-    pushTerminalLog("🔧 开始调用同步任务...", "info");
-    pushTerminalLog(`Source ID: ${sourceId} | Target ID: ${targetId}`, "info");
-
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-
-    try {
-      const token = storage.get('accessToken');
-      await fetchEventSource('/api/v1/base/execute', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          source_id: sourceId,
-          target_id: targetId,
-          count: 10
-        }),
-        signal: controller.signal,
-
-        onopen(response) {
-          if (response.ok && response.headers.get('content-type')?.includes('text/event-stream')) {
-            pushTerminalLog("🛰️ Pipeline handshake complete. Data streaming...", "success");
-          } else {
-            pushTerminalLog(`❌ Pipeline rejected connection. Status: ${response.status}`, "error");
-            setSyncStatus("error");
-          }
-          return Promise.resolve();
-        },
-
-        onmessage(msg) {
-          if (msg.data === '[DONE]') {
-            pushTerminalLog("🎉 Synchronization routine exited with code 0.", "success");
-            setSyncStatus("done");
-            setIsSyncing(false);
-            controller.abort();
-            toast.success("任务完成！");
-            return;
-          }
-
-          try {
-            const payload = JSON.parse(msg.data);
-            pushTerminalLog(payload.message, payload.level || "info");
-          } catch {
-            pushTerminalLog(msg.data, "info");
-          }
-        },
-
-        onclose() {
-          pushTerminalLog("🔒 Server pipeline link channel closed.", "warn");
-          setSyncStatus("done");
-          setIsSyncing(false);
-        },
-
-        onerror(err) {
-          pushTerminalLog(`🚨 Interrupted fatal error: ${err.message || err}`, "error");
-          setSyncStatus("error");
-          setIsSyncing(false);
-          throw err;
-        }
-      });
-    } catch {
-      console.log("SSE execution pipeline final clear.");
-    }
-  };
-
   const handleQuickSync = async () => {
     if (isQuickSyncing || !sourceId || !targetId) {
       if (!isQuickSyncing && (!sourceId || !targetId)) {
@@ -523,16 +426,6 @@ export default function DashPage() {
     } finally {
       setIsQuickSyncing(false);
     }
-  };
-
-  const handleCloseTerminal = () => {
-    if (syncStatus === "syncing" && abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      pushTerminalLog("🛑 Sync pipeline aborted by manual terminal kill signal.", "error");
-    }
-    setIsTerminalOpen(false);
-    setIsSyncing(false);
-    setSyncStatus("idle");
   };
 
   return (
@@ -713,15 +606,6 @@ export default function DashPage() {
                 <IconBolt className={cn("h-5 w-5", isQuickSyncing && "animate-pulse")} />
                 {isQuickSyncing ? t("quickSyncing") : t("quickSync")}
               </Button>
-              <Button
-                size="lg"
-                className="h-12 rounded-full px-8 text-lg shadow-sm"
-                onClick={handleGlobalSync}
-                disabled={isSyncing || !sourceId || !targetId}
-              >
-                <IconRefresh className={cn("h-5 w-5", isSyncing && "animate-spin")} />
-                {isSyncing ? t("syncing") : t("oneclickSync")}
-              </Button>
             </div>
           </div>
         </CardContent>
@@ -734,13 +618,6 @@ export default function DashPage() {
         </div>
         <SecurityNotice />
       </div>
-
-      <TerminalModal
-        isOpen={isTerminalOpen}
-        onClose={handleCloseTerminal}
-        logs={terminalLogs}
-        status={syncStatus}
-      />
     </div>
   );
 }

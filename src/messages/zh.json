@@ -67,10 +67,8 @@
     "errorRegister": "注册失败"
   },
   "DashPage": {
-    "oneclickSync": "一键同步",
-    "quickSync": "快速同步",
-    "quickSyncing": "快速同步中...",
-    "oneclickSyncDesc": "选择源头和目标平台，点击一键同步后，将自动同步上传最新的 10 条运动数据，系统会自动过滤掉时间和距离相同的重复记录。",
+    "quickSync": "一键同步",
+    "quickSyncing": "一键同步中...",
     "fetchMore": "查询更多",
     "account": "账号",
     "region": "地区",
@@ -85,7 +83,6 @@
     "recentLogs": "最近操作记录",
     "noLogData": "未查询到相关日志",
     "selectPlatform": "选择平台账号",
-    "syncing": "同步中...",
     "syncFailed": "同步失败",
     "selectSourceAndTarget": "请先选择数据源和目标平台",
     "syncFailedTryAgain": "请求同步失败，请稍后重试",
