@@ -64,10 +64,8 @@
     "errorRegister": "Registration failed"
   },
   "DashPage": {
-    "oneclickSync": "One-Click Sync",
-    "quickSync": "Quick Sync",
-    "quickSyncing": "Quick Syncing...",
-    "oneclickSyncDesc": "Connect two or more platforms, click one-click sync, and automatically upload the latest 10 pieces of sports data, filtering out duplicate records with the same time and distance.",
+    "quickSync": "One-Click Sync",
+    "quickSyncing": "One-Click Syncing...",
     "fetchMore": "Fetch More",
     "account": "account",
     "region": "region",
@@ -82,7 +80,6 @@
     "recentLogs": "Recent Logs",
     "noLogData": "No log data found",
     "selectPlatform": "Select Platform",
-    "syncing": "Syncing...",
     "syncFailed": "Sync Failed",
     "selectSourceAndTarget": "Please select a source and target platform first",
     "syncFailedTryAgain": "Sync request failed, please try again later",
