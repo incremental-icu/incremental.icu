@@ -66,7 +66,7 @@ export function SiteHeader() {
   const handleLogout = () => {
     storage.clearAuth();
     toast.success("logout Success");
-    router.replace('/login');
+    router.replace('/sign-in');
   };
 
   return (

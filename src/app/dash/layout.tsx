@@ -2,10 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useTranslations } from "next-intl";
-import { toast } from "sonner";
-import { storage } from '@/lib/storage';
-import { authFetch } from '@/lib/api';
+import { useAuth } from "@clerk/nextjs";
 import { SiteHeader } from "@/components/dash/site-header"
 import { SiteFooter } from "@/components/dash/site-footer"
 
@@ -15,27 +12,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const router = useRouter();
-  const t = useTranslations("LoginPage");
+  const { isLoaded, isSignedIn } = useAuth();
+
   useEffect(() => {
-    const checkAuth = async () => {
-      const token = storage.get('accessToken');
-      if (!token) {
-        storage.clearAuth();
-        toast.error(t("loginFail"));
-        router.replace('/login');
-      }
-      try {
-        const userRes = await authFetch('/api/v1/user/me', { method: 'GET' });
-        if (!userRes.ok) {
-          storage.clearAuth();
-          router.replace('/login');
-        }
-      } catch (err) {
-        console.error("Auth check failed:", err);
-      }
-    };
-    checkAuth();
-  }, [router, t]);
+    // 由 Clerk middleware 负责服务端鉴权，这里只做客户端兜底，
+    // 避免在已登录时因 API 失败跳回 /sign-in 造成循环跳转。
+    if (isLoaded && !isSignedIn) {
+      router.replace('/sign-in');
+    }
+  }, [isLoaded, isSignedIn, router]);
+
   return (
     <div className="flex flex-col min-h-screen">
       <header>
