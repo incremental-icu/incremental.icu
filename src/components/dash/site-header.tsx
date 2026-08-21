@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useTranslations } from "next-intl";
 import { useClerk } from "@clerk/nextjs";
+import { authFetch } from "@/lib/api";
 import { GitHubLink } from '@/components/githubLink';
 import { useLayout } from "@/hooks/use-layout";
 import { cn } from "@/lib/utils";
@@ -43,15 +44,41 @@ export function SiteHeader() {
   const { signOut } = useClerk();
 
   useEffect(() => {
-    const userData = storage.get('user');
-    if (userData) {
-      try {
-        const parsedUser = typeof userData === 'string' ? JSON.parse(userData) : userData;
-        setUser(parsedUser);
-      } catch (error) {
-        console.error("解析用户信息失败:", error);
+    const loadUser = async () => {
+      const userData = storage.get('user');
+      if (userData) {
+        try {
+          const parsedUser = typeof userData === 'string' ? JSON.parse(userData) : userData;
+          setUser(parsedUser);
+        } catch (error) {
+          console.error("解析用户信息失败:", error);
+        }
+        return;
       }
-    }
+
+      // localStorage 中没有用户信息，从后端 API 获取
+      try {
+        const res = await authFetch('/api/v1/user/me');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.user) {
+            const userInfo = {
+              id: data.user.id,
+              username: data.user.username,
+              email: data.user.email,
+              timezone: data.user.timezone,
+              yearly_target: data.user.yearly_target,
+            };
+            storage.set('user', userInfo);
+            setUser(userInfo);
+          }
+        }
+      } catch (error) {
+        console.error("获取用户信息失败:", error);
+      }
+    };
+
+    loadUser();
   }, []);
 
   const router = useRouter();
