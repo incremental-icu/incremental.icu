@@ -143,7 +143,9 @@ export async function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get('token');
   const headers: Record<string, string> = {};
   if (token) headers['Authorization'] = `Bearer ${token}`;
-  const baseUrl = request.nextUrl.origin;
+  // Backend `/api/v1` is only proxied on incremental.icu; the Next.js app
+  // (i.incremental.icu) does not proxy it and Clerk blocks unauthenticated calls.
+  const baseUrl = 'https://incremental.icu';
 
   try {
     const [mainRes, yestRes] = await Promise.all([
