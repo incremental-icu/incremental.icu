@@ -65,8 +65,11 @@ export function SiteHeader() {
     { name: "网站状态", href: 'https://status.incremental.icu' }
   ];
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // 清除本地存储
     storage.clearAuth();
+    // 调用 Clerk signOut 清除 session
+    await signOut();
     toast.success("logout Success");
     router.replace('/sign-in');
   };
