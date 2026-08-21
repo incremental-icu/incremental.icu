@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useTranslations } from "next-intl";
+import { useClerk } from "@clerk/nextjs";
 import { GitHubLink } from '@/components/githubLink';
 import { useLayout } from "@/hooks/use-layout";
 import { cn } from "@/lib/utils";
@@ -39,6 +40,7 @@ export function SiteHeader() {
   const { layout } = useLayout();
   const [user, setUser] = useState<User | null>(null);
   const pathname = usePathname();
+  const { signOut } = useClerk();
 
   useEffect(() => {
     const userData = storage.get('user');
@@ -63,8 +65,11 @@ export function SiteHeader() {
     { name: "网站状态", href: 'https://status.incremental.icu' }
   ];
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // 清除本地存储
     storage.clearAuth();
+    // 调用 Clerk signOut 清除 session
+    await signOut();
     toast.success("logout Success");
     router.replace('/sign-in');
   };
