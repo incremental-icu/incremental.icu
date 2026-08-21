@@ -30,7 +30,7 @@ export default function Home() {
             <div className="pt-8 flex flex-col items-start gap-6">
               <div className="flex flex-wrap justify-start gap-6">
                 <Button
-                  onClick={() => router.push('/login')}
+                  onClick={() => router.push('/sign-in')}
                   size="lg"
                   className="h-14 px-8 rounded-full shadow-lg hover:shadow-xl transition-all gap-2 text-lg font-semibold"
                 >
