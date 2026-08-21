@@ -45,6 +45,7 @@
 - **邮件服务**: [Resend](https://resend.com/)
 - **图标库**: [Tabler Icons](https://tabler-icons.io/)
 - **garth**: 一个模拟佳明客户端的 python 包，目前版本 0.5.17 更高版本支持佳明国内版有问题。
+- **Cerk**: 用于用户身份验证和授权的后端服务，基于 Clerk.js 提供。
 
 ### 部署与 CI/CD
 
