@@ -48,22 +48,49 @@ export default function ProfilePage() {
   const [savingYearlyTarget, setSavingYearlyTarget] = useState(false);
 
   useEffect(() => {
-    const userData = storage.get('user');
-    if (!userData) return;
-
-    try {
-      const parsedUser = typeof userData === 'string' ? JSON.parse(userData) : userData;
-      if (!parsedUser.timezone) {
-        parsedUser.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const loadUser = async () => {
+      const userData = storage.get('user');
+      if (userData) {
+        try {
+          const parsedUser = typeof userData === 'string' ? JSON.parse(userData) : userData;
+          if (!parsedUser.timezone) {
+            parsedUser.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+          }
+          setUser(parsedUser as User);
+          setYearlyTarget(
+            parsedUser.yearly_target?.toString() ?? String(new Date().getFullYear())
+          );
+        } catch (error) {
+          console.error('解析用户信息失败:', error);
+        }
+        return;
       }
-      setUser(parsedUser as User);
-      // 年度跑量目标：未设置时默认当年年份（如 2026）
-      setYearlyTarget(
-        parsedUser.yearly_target?.toString() ?? String(new Date().getFullYear())
-      );
-    } catch (error) {
-      console.error('解析用户信息失败:', error);
-    }
+
+      // localStorage 中没有用户信息，从后端 API 获取
+      try {
+        const res = await authFetch('/api/v1/user/me');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.user) {
+            const userInfo: User = {
+              username: data.user.username,
+              email: data.user.email,
+              timezone: data.user.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
+              yearly_target: data.user.yearly_target,
+            };
+            storage.set('user', userInfo);
+            setUser(userInfo);
+            setYearlyTarget(
+              data.user.yearly_target?.toString() ?? String(new Date().getFullYear())
+            );
+          }
+        }
+      } catch (error) {
+        console.error('获取用户信息失败:', error);
+      }
+    };
+
+    loadUser();
   }, []);
 
   useEffect(() => {
